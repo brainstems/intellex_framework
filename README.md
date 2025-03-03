@@ -275,7 +275,7 @@ Please read our [Contributing Guide](CONTRIBUTING.md) for more detailed informat
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/intellex-framework.git
+git clone https://github.com/brainstems/intellex-framework.git
 
 # Navigate to the project directory
 cd intellex-framework
@@ -295,9 +295,10 @@ npm test
 
 For questions, feedback, or discussions about the Intellex Framework:
 
-- Create an issue on [GitHub](https://github.com/yourusername/intellex-framework/issues)
-- Join our [Discord community](https://discord.gg/intellexframework)
-- Follow us on [Twitter](https://twitter.com/intellexframework)
+- Create an issue on [GitHub](https://github.com/brainstems/intellex-framework/issues)
+- Join our [Discord community](https://discord.gg/S5C6CvqKwz)
+- Follow us on [Twitter](https://twitter.com/intellex_xyz)
+- Join us on [Telegram](https://t.me/Intellex_ai)
 
 ---
 
@@ -360,9 +361,9 @@ an individual is officially representing the community in public spaces.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the project maintainers responsible for enforcement at
-[maintainers@intellexframework.org].
+[maintainers@intellex.xyz].
 All complaints will be reviewed and investigated promptly and fairly.
 
 ## Attribution
 
-This Code of Conduct is adapted from the [Contributor Covenant](https://www 
+This Code of Conduct is adapted from the Contributor Covenant.
