@@ -1,0 +1,80 @@
+{
+  "name": "intellex-framework",
+  "version": "0.2.0",
+  "description": "A comprehensive framework for building decentralized AI agent systems with interoperability between agents on different platforms, reputation tracking, cross-chain capabilities, and intent-based interactions",
+  "main": "intellex/index.js",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint .",
+    "start": "node examples/basic-example.js",
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development --watch",
+    "docs": "jsdoc -c jsdoc.json"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "blockchain",
+    "near",
+    "reputation",
+    "cross-chain",
+    "intent",
+    "decentralized",
+    "chain-abstraction",
+    "interoperability",
+    "crewai",
+    "sui"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "near-api-js": "^2.1.4",
+    "near-sdk-js": "^1.0.0",
+    "near-wallet-selector": "^8.5.3",
+    "near-chain-configs": "^0.1.0",
+    "uuid": "^9.0.0",
+    "web3": "^1.10.0",
+    "@solana/web3.js": "^1.73.3",
+    "@aurora-is-near/engine": "^1.0.0",
+    "@mysten/sui.js": "^0.42.0",
+    "axios": "^1.4.0",
+    "bn.js": "^5.2.1",
+    "bs58": "^5.0.0",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "lodash": "^4.17.21",
+    "tweetnacl": "^1.0.3",
+    "borsh": "^0.7.0",
+    "ethers": "^6.6.4",
+    "near-ai-toolkit": "^0.1.0",
+    "near-ai-agent-sdk": "^0.1.0",
+    "near-ai-models": "^0.1.0",
+    "aitp": "^0.1.0",
+    "aitp-client": "^0.1.0",
+    "aitp-server": "^0.1.0",
+    "crewai": "^0.1.0",
+    "crewai-tools": "^0.1.0",
+    "langchain": "^0.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.21.0",
+    "@babel/preset-env": "^7.20.2",
+    "babel-loader": "^9.1.2",
+    "eslint": "^8.35.0",
+    "jest": "^29.5.0",
+    "jsdoc": "^4.0.2",
+    "webpack": "^5.76.0",
+    "webpack-cli": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/intellex-framework.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/intellex-framework/issues"
+  },
+  "homepage": "https://github.com/yourusername/intellex-framework#readme"
+} 
