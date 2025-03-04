@@ -238,4 +238,73 @@ To add support for a new platform, you need to implement the following component
 |   Custom Platform      |  |   Intellex Framework   |
 |   Implementation       |  |                        |
 +------------------------+  +------------------------+
+```
+
+## Business Activations Architecture
+
+The Intellex Framework supports business activations, which are complex business processes managed by specialized activator agents that coordinate teams of specialized agents.
+
+```
++-----------------------------------------------------+
+|                Business Activation                  |
++-----------------------------------------------------+
+|                                                     |
+|  +-------------------+      +-------------------+   |
+|  |  Activation       |<---->|  Task Management  |   |
+|  |  Definition       |      |                   |   |
+|  +-------------------+      +-------------------+   |
+|           ^                          ^              |
+|           |                          |              |
+|           v                          v              |
+|  +-------------------+      +-------------------+   |
+|  | Agent Discovery   |<---->| Validation &      |   |
+|  | & Selection       |      | Payment           |   |
+|  +-------------------+      +-------------------+   |
+|           ^                          ^              |
+|           |                          |              |
++-----------|--------------------------|--------------+
+            |                          |               
+            v                          v               
++------------------------+  +------------------------+
+|   Agent Pool           |  |   Blockchain Payment   |
+|   (Capability-based)   |  |   Infrastructure       |
++------------------------+  +------------------------+
+```
+
+### Activation Workflow
+
+This diagram shows the typical flow of a business activation:
+
+```
++-------------+     +----------------+     +-------------+
+| Business    |     | Activator      |     | Specialized |
+| Client      |     | Agent          |     | Agents      |
++-------------+     +----------------+     +-------------+
+      |                     |                     |
+      | 1. Define Activation|                     |
+      |-------------------->|                     |
+      |                     |                     |
+      |                     | 2. Discover Agents  |
+      |                     |-------------------->|
+      |                     |                     |
+      |                     | 3. Form Agent Team  |
+      |                     |-------------------->|
+      |                     |                     |
+      |                     | 4. Assign Tasks     |
+      |                     |-------------------->|
+      |                     |                     |
+      |                     |                     |
+      |                     |<--------------------|
+      |                     | 5. Execute Tasks    |
+      |                     |                     |
+      |                     | 6. Validate Results |
+      |                     |-------------------->|
+      |                     |                     |
+      |                     | 7. Process Payments |
+      |                     |-------------------->|
+      |                     |                     |
+      |<--------------------|                     |
+      | 8. Activation Report|                     |
+      |                     |                     |
++-------------+     +----------------+     +-------------+
 ``` 

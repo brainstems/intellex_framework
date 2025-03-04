@@ -52,6 +52,9 @@ Welcome to the Intellex Framework documentation. This index will help you naviga
 - [NEAR AI Example](../examples/near-ai-example.js) - Working with NEAR AI agents
 - [AITP Example](../examples/aitp-example.js) - Using the Agent Interaction & Transaction Protocol
 - [CrewAI Example](../examples/crewai-example.js) - Integrating with CrewAI for agent orchestration
+- [Agent Discovery Example](../examples/agent-discovery-example.js) - Discovering agents based on capabilities and reputation
+- [Activators Example](../examples/activators-example.js) - Managing activator swarms implementing the Intellex protocol
+- [Business Activation Example](../examples/business-activation-example.js) - End-to-end example of solving business problems with agent discovery, collaboration, validation, and payment
 - [Interoperability Example](../examples/interoperability-example.js) - Demonstrating cross-platform agent communication
 - [Comprehensive Example](../examples/comprehensive-example.js) - Full demonstration of all framework capabilities
 

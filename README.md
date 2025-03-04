@@ -14,11 +14,14 @@ Intellex Framework provides a comprehensive solution for developing applications
   - **Unified Agent Interface**: Common interface for creating, running, and managing agents regardless of platform.
   - **Cross-Platform Communication**: Seamless communication between agents on different platforms.
   - **Reputation Tracking**: Track and manage agent reputation across platforms.
+  - **Agent Discovery**: Discover agents based on capabilities, reputation, and historical behavior.
+  - **Capability Registry**: Register and query agent capabilities within the ecosystem.
 
 - **Platform Support**:
   - **CrewAI Integration**: Orchestrate multiple agents to work together on complex tasks.
   - **NEAR AI Integration**: Leverage NEAR AI's agent toolkit for building autonomous agents.
   - **SUI Blockchain Integration**: Create and manage agents on the SUI blockchain.
+  - **Activators Management Platform**: Deploy and manage activator swarms implementing the Intellex protocol.
   - **Extensible Architecture**: Add support for new platforms through the adapter pattern.
 
 - **NEAR Protocol Integration**: Seamless integration with NEAR Protocol, including support for accounts, access keys, and contract interactions.
@@ -32,6 +35,15 @@ Intellex Framework provides a comprehensive solution for developing applications
   - **Chat Threads**: Create and manage threads for agent communication.
   - **Capabilities**: Support for payments, data requests, decisions, and wallet integrations.
   - **Service Agents**: Connect with and discover service agents.
+
+- **Activators Management Platform Integration**:
+  - **Distributed Deployment**: Deploy agent activators across distributed environments.
+  - **Resource Management**: Optimize resource allocation for multi-agent activator systems.
+  - **Performance Monitoring**: Track and analyze activator performance metrics.
+  - **Regional Distribution**: Deploy activators strategically across global regions.
+  - **Secure Communication**: Establish secure communication channels between activators and other agents.
+  - **Performance Enhancement Staking**: Stake $ITLX tokens on activators to enhance speed and intelligence.
+  - **Task Specialization**: Select specific tasks and activation focus through staking process.
 
 - **Cross-Chain Operations**: Execute transactions across different blockchain networks.
 - **Reputation System**: Track and manage agent reputation across platforms.
@@ -70,6 +82,10 @@ const framework = intellex.init({
   enableReputation: true,
   crossChainSupport: ['ethereum', 'near', 'sui'],
   intentProcessing: true,
+  activatorsApiKey: 'your-activators-api-key',
+  activatorsRegion: 'global',
+  enableAgentDiscovery: true,
+  nearAIDiscoveryApiKey: 'your-discovery-api-key',
 });
 
 // Create agents on different platforms
@@ -82,6 +98,13 @@ async function createAgents() {
     tools: ['web-search', 'document-analysis'],
   });
   
+  // Register capabilities for the agent
+  await framework.registerAgentCapabilities(crewAIAgent.id, [
+    'research',
+    'information_analysis',
+    'report_generation'
+  ]);
+  
   // Create a NEAR AI agent
   const nearAIAgent = await framework.createAgent('nearai', {
     name: 'Blockchain Expert',
@@ -90,11 +113,46 @@ async function createAgents() {
     modelId: 'near-ai-blockchain',
   });
   
+  // Register capabilities for the NEAR AI agent
+  await framework.registerAgentCapabilities(nearAIAgent.id, [
+    'smart_contract_analysis',
+    'transaction_validation',
+    'blockchain_monitoring'
+  ]);
+  
+  // Discover agents with specific capabilities
+  const blockchainAgents = await framework.discoverAgents({
+    capabilities: ['smart_contract_analysis'],
+    minReputationScore: 0.7,
+  });
+  
+  console.log(`Found ${blockchainAgents.length} blockchain experts`);
+  
   // Connect agents across platforms
   const connection = await framework.connectAgents(
     crewAIAgent.id,
-    nearAIAgent.id,
+    blockchainAgents[0].id,
     { title: 'Research and Blockchain Expertise Collaboration' }
+  );
+  
+  // Create an activator (agent swarm implementing Intellex protocol)
+  const inventoryActivator = await framework.createActivator({
+    name: "Inventory Intelligence",
+    baseAgent: "inventory",
+    availability: "40+ hrs/week",
+    functionalities: ["pattern_recognition", "predictive_analytics"],
+    aptitudes: ["natural_language_processing", "database_management"],
+    description: "Specialized in inventory optimization and supply chain management"
+  });
+  
+  // Connect your NEAR AI agent to the activator
+  await framework.connectAgentToActivator(
+    nearAIAgent.id,
+    inventoryActivator.id,
+    {
+      connectionType: 'bidirectional',
+      capabilities: ['contract_integration', 'security_verification'],
+    }
   );
   
   // Run an agent to perform a task
@@ -184,6 +242,118 @@ await communicationAdapter.addMessage(thread.id, {
 });
 ```
 
+### Activators Management Platform Integration
+
+The Activators Management Platform integration allows creating and managing activators, which are swarms of agents (or single agents) that implement the Intellex framework to access and interoperate with other agents:
+
+```javascript
+// Get the Activators Management integration
+const activatorsManagement = framework.getActivatorsManagement();
+
+// Create an activator
+const inventoryActivator = await framework.createActivator({
+  name: "Inventory Intelligence",
+  baseAgent: "inventory",
+  availability: "40+ hrs/week",
+  functionalities: ["pattern_recognition", "predictive_analytics"],
+  aptitudes: ["natural_language_processing", "database_management"],
+  description: "An activator specialized in inventory optimization"
+});
+
+// List all activators
+const activators = await framework.listActivators({
+  status: 'active',
+  region: 'us-east'
+});
+
+// Connect an agent to an activator
+await framework.connectAgentToActivator(
+  agentId,
+  inventoryActivator.id,
+  { connectionType: 'bidirectional' }
+);
+
+// Assign a task to an activator
+const task = await activatorsManagement.assignTask(
+  inventoryActivator.id,
+  {
+    description: "Analyze current inventory levels and optimize",
+    priority: "high",
+    deadline: new Date(Date.now() + 2 * 86400000).toISOString()
+  }
+);
+
+// Get activator performance metrics
+const metrics = await activatorsManagement.getActivatorMetrics(inventoryActivator.id);
+
+// Stake additional $ITLX tokens to enhance activator capabilities
+const enhancedActivator = await activatorsManagement.stakeOnActivator(
+  inventoryActivator.id,
+  {
+    amount: 20, // Stake 20 additional $ITLX tokens
+    performanceBoosts: {
+      speed: true,  // Boost processing speed
+      intelligence: true,  // Boost intelligence/accuracy
+      custom: {
+        predictionAccuracy: 15 // Custom boost to prediction accuracy
+      }
+    },
+    taskTypes: ['inventory_optimization', 'supply_chain_planning'],
+    activationFocus: 'operational_efficiency'
+  }
+);
+
+// Get detailed staking information for an activator
+const stakingDetails = await activatorsManagement.getActivatorStakingDetails(inventoryActivator.id);
+```
+
+### Agent Discovery and Capability Registry
+
+The Agent Discovery and Capability Registry allows agents to find and understand each other's capabilities:
+
+```javascript
+// Get the agent registry
+const agentRegistry = framework.getAgentRegistry();
+
+// Register agent capabilities
+await framework.registerAgentCapabilities(agentId, [
+  'data_analysis',
+  'pattern_recognition',
+  'report_generation'
+]);
+
+// Discover agents based on capabilities
+const dataAnalysisAgents = await framework.discoverAgents({
+  capabilities: ['data_analysis'],
+  minReputationScore: 0.7,
+  filters: {
+    platformType: 'crewai'
+  },
+  limit: 5
+});
+
+// Get agent capabilities
+const capabilities = await framework.getAgentCapabilities(agentId);
+
+// Get agent historical behavior
+const history = await framework.getAgentHistory(agentId);
+
+// Record agent task execution
+await framework.recordAgentTask(agentId, {
+  taskId: 'task-001',
+  description: 'Analyze quarterly sales data',
+  success: true,
+  performanceMetrics: {
+    accuracy: 0.95,
+    completionTime: 120 // seconds
+  },
+  requesterId: 'user-001',
+  evidence: {
+    outputUrl: 'https://example.com/reports/sales-analysis.pdf'
+  }
+});
+```
+
 ### NEAR Integration
 
 The NEAR integration module provides a comprehensive set of functions for interacting with the NEAR Protocol:
@@ -220,6 +390,8 @@ The framework includes several example implementations to demonstrate its capabi
 - [NEAR AI Example](examples/near-ai-example.js) - Working with NEAR AI agents
 - [AITP Example](examples/aitp-example.js) - Using the Agent Interaction & Transaction Protocol
 - [CrewAI Example](examples/crewai-example.js) - Integrating with CrewAI for agent orchestration
+- [Activators Example](examples/activators-example.js) - Working with the Activators Management Platform
+- [Agent Discovery Example](examples/agent-discovery-example.js) - Discovering and connecting agents based on capabilities
 - [Interoperability Example](examples/interoperability-example.js) - Demonstrating cross-platform agent communication
 - [Comprehensive Example](examples/comprehensive-example.js) - Full demonstration of all framework capabilities
 - [Emergent Swarm Example](examples/emergent-swarm-example.js) - Demonstrating stigmergic and stochastic agent systems

@@ -20,6 +20,7 @@ const CrossChainBridge = require('./core/cross-chain-bridge');
 const NearIntegration = require('./core/near-integration');
 const CoreUtils = require('./core/index');
 const AgentRegistry = require('./core/agent-registry');
+const NearAIDiscovery = require('./core/near-ai-discovery');
 
 // Interfaces
 const AgentInterface = require('./core/agent-interface');
@@ -31,6 +32,7 @@ const OmniBridgeIntegration = require('./omnibridge_integration');
 const NearAIIntegration = require('./core/near-ai-integration');
 const AITPIntegration = require('./core/aitp-integration');
 const CrewAIIntegration = require('./core/crewai-integration');
+const ActivatorsManagementIntegration = require('./core/activators-management-integration');
 const reputationAnalytics = require('./reputation_analytics');
 
 // Import adapters
@@ -46,19 +48,103 @@ const components = require('./components');
 const VERSION = '0.2.0';
 
 /**
- * Initialize the Intellex framework
- * @param {Object} config - Configuration options
- * @returns {Object} - Framework instance
+ * Initialize the framework
+ * @param {Object} options - Framework initialization options
+ * @returns {Object} - Initialized framework instance
  */
-function init(config = {}) {
+function init(options = {}) {
+  // Initialize framework configuration
+  const config = {
+    ...DEFAULT_CONFIG,
+    ...options
+  };
+  
+  // Initialize storage
+  const storage = initStorage(config.storage);
+  
+  // Initialize integrations
+  const integrations = new Map();
+  
+  // Initialize agent registry
+  const agents = {};
+  
+  // Initialize discovery systems
+  const discovery = {};
+  
+  // Initialize NEAR AI integration if enabled
+  if (config.enableNearAI) {
+    const NearAIIntegration = require('./core/near-ai-integration');
+    const nearAIOptions = {
+      apiKey: config.nearAIApiKey,
+      environment: config.nearNetwork || 'development',
+      privateMode: config.privateMode || false
+    };
+    
+    const nearAIIntegration = new NearAIIntegration(nearAIOptions);
+    integrations.set('nearai', nearAIIntegration);
+    
+    // Initialize immediately if auto-initialize is enabled
+    if (config.autoInitialize) {
+      nearAIIntegration.initialize();
+    }
+    
+    // Initialize NEAR AI Discovery if enabled
+    if (config.enableAgentDiscovery) {
+      const NearAIDiscovery = require('./core/near-ai-discovery');
+      const nearAIDiscoveryOptions = {
+        apiKey: config.nearAIDiscoveryApiKey || config.nearAIApiKey,
+        environment: config.nearNetwork || 'development',
+        enableGlobalDiscovery: config.enableGlobalDiscovery !== false,
+        privateMode: config.privateMode || false,
+        reputationConfig: config.reputationConfig || {
+          initialScore: 0.7,
+          weightPerformance: 0.6,
+          weightFeedback: 0.3,
+          weightHistory: 0.1
+        }
+      };
+      
+      const nearAIDiscovery = new NearAIDiscovery(nearAIDiscoveryOptions);
+      discovery.nearAI = nearAIDiscovery;
+      
+      // Initialize immediately if auto-initialize is enabled
+      if (config.autoInitialize) {
+        nearAIDiscovery.initialize();
+      }
+    }
+  }
+
+  // Initialize CrewAI integration if enabled
+  if (config.enableCrewAI) {
+    const CrewAIIntegration = require('./core/crewai-integration');
+    const crewAIOptions = {
+      apiKey: config.crewAIApiKey,
+      defaultLLM: config.crewAIDefaultLLM
+    };
+    
+    const crewAIIntegration = new CrewAIIntegration(crewAIOptions);
+    integrations.set('crewai', crewAIIntegration);
+    
+    // Initialize immediately if auto-initialize is enabled
+    if (config.autoInitialize) {
+      crewAIIntegration.initialize();
+    }
+  }
+  
+  // Initialize communication adapter
+  const CommunicationAdapter = require('./adapters/communication-adapter');
+  const communicationAdapter = new CommunicationAdapter({
+    storageAdapter: storage
+  });
+  
+  // Create framework instance
   const framework = {
-    config: {
-      nearNetwork: config.nearNetwork || 'testnet',
-      enableReputation: config.enableReputation !== false,
-      crossChainSupport: config.crossChainSupport || ['ethereum', 'near'],
-      intentProcessing: config.intentProcessing !== false,
-      ...config,
-    },
+    config,
+    storage,
+    integrations,
+    agents,
+    discovery,
+    communicationAdapter,
     
     // Core module instances
     _agentManager: null,
@@ -69,8 +155,9 @@ function init(config = {}) {
     _nearAIIntegration: null,
     _aitpIntegration: null,
     _crewAIIntegration: null,
+    _activatorsManagement: null,
     _agentRegistry: null,
-    _communicationAdapter: null,
+    _nearAIDiscovery: null,
     
     // Adapters
     _adapters: {},
@@ -152,6 +239,21 @@ function init(config = {}) {
       return this._crewAIIntegration;
     },
     
+    // Get the Activators Management Platform integration
+    getActivatorsManagement() {
+      if (!this._activatorsManagement) {
+        this._activatorsManagement = new ActivatorsManagementIntegration({
+          apiKey: this.config.activatorsApiKey,
+          platformUrl: this.config.activatorsPlatformUrl,
+          region: this.config.activatorsRegion,
+          resourceLimits: this.config.activatorsResourceLimits,
+          securitySettings: this.config.activatorsSecuritySettings,
+          stakingAmount: this.config.activatorsStakingAmount,
+        });
+      }
+      return this._activatorsManagement;
+    },
+    
     // Get the communication adapter
     getCommunicationAdapter() {
       if (!this._communicationAdapter) {
@@ -163,13 +265,37 @@ function init(config = {}) {
       return this._communicationAdapter;
     },
     
+    // Get the Near AI Discovery integration
+    getNearAIDiscovery() {
+      if (!this._nearAIDiscovery) {
+        this._nearAIDiscovery = new NearAIDiscovery({
+          apiKey: this.config.nearAIDiscoveryApiKey,
+          environment: this.config.environment,
+          enableGlobalDiscovery: this.config.enableAgentDiscovery
+        });
+      }
+      return this._nearAIDiscovery;
+    },
+    
     // Get the agent registry
     getAgentRegistry() {
       if (!this._agentRegistry) {
+        // Initialize reputation system first if enabled
+        let reputationSystem = null;
+        if (this.config.enableReputation) {
+          reputationSystem = this.getReputationSystem();
+        }
+        
+        // Initialize Near AI Discovery if enabled
+        let nearAIDiscovery = null;
+        if (this.config.enableAgentDiscovery) {
+          nearAIDiscovery = this.getNearAIDiscovery();
+        }
+        
         this._agentRegistry = new AgentRegistry({
-          reputationSystem: this.getReputationSystem(),
+          reputationSystem,
+          nearAIDiscovery
         });
-        this._agentRegistry.initialize();
         
         // Register adapters if not already registered
         this._registerDefaultAdapters();
@@ -262,6 +388,193 @@ function init(config = {}) {
       
       return this._agentRegistry.getAllAgents(filters);
     },
+    
+    // Create and deploy an activator
+    async createActivator(activatorConfig, deploymentOptions = {}) {
+      if (!this._activatorsManagement) {
+        this.getActivatorsManagement(); // Initialize the Activators Management Platform integration
+      }
+      
+      return this._activatorsManagement.createActivator(activatorConfig, deploymentOptions);
+    },
+    
+    // List all activators
+    async listActivators(filters = {}) {
+      if (!this._activatorsManagement) {
+        this.getActivatorsManagement(); // Initialize the Activators Management Platform integration
+      }
+      
+      return this._activatorsManagement.listActivators(filters);
+    },
+    
+    // Connect an agent to an activator
+    async connectAgentToActivator(agentId, activatorId, options = {}) {
+      if (!this._activatorsManagement) {
+        this.getActivatorsManagement(); // Initialize the Activators Management Platform integration
+      }
+      
+      if (!this._agentRegistry) {
+        this.getAgentRegistry(); // Initialize the agent registry
+      }
+      
+      const agent = await this._agentRegistry.getAgent(agentId);
+      if (!agent) {
+        throw new Error(`Agent with ID ${agentId} not found`);
+      }
+      
+      return this._activatorsManagement.connectActivatorToAgent(activatorId, agentId, options);
+    },
+    
+    /**
+     * Discover agents based on capability requirements
+     * @param {Object} query - Query parameters
+     * @param {Array} query.capabilities - Required capabilities
+     * @param {number} query.minReputationScore - Minimum reputation score
+     * @param {Object} query.filters - Additional filters
+     * @param {number} query.limit - Maximum number of agents to return
+     * @returns {Promise<Array>} - List of matching agents
+     */
+    async discoverAgents(query = {}) {
+      const discovery = this.getNearAIDiscovery();
+      if (!discovery) {
+        console.warn('Agent discovery is not enabled');
+        return [];
+      }
+      
+      return await discovery.discoverAgents(query);
+    },
+    
+    /**
+     * Register agent capabilities in the framework's discovery system
+     * @param {string} agentId - ID of the agent
+     * @param {Array} capabilities - List of capabilities the agent has
+     * @param {Object} metadata - Additional metadata for the agent
+     * @returns {Promise<boolean>} - Whether registration was successful
+     */
+    async registerAgentCapabilities(agentId, capabilities, metadata = {}) {
+      const discovery = this.getNearAIDiscovery();
+      if (!discovery) {
+        console.warn('Agent discovery is not enabled, capabilities not registered');
+        return false;
+      }
+      
+      // Register agent capabilities in the discovery system
+      return await discovery.publishAgentCapabilities(agentId, {
+        capabilities,
+        metadata
+      });
+    },
+    
+    /**
+     * Get capabilities for a specific agent
+     * @param {string} agentId - ID of the agent
+     * @returns {Promise<Object>} - Agent capabilities and metadata
+     */
+    async getAgentCapabilities(agentId) {
+      const discovery = this.getNearAIDiscovery();
+      if (!discovery) {
+        console.warn('Agent discovery is not enabled');
+        return { capabilities: [], metadata: {} };
+      }
+      
+      return await discovery.getAgentCapabilities(agentId);
+    },
+    
+    /**
+     * Get historical behavior for a specific agent
+     * @param {string} agentId - ID of the agent
+     * @returns {Promise<Object>} - Agent history and reputation
+     */
+    async getAgentHistory(agentId) {
+      const discovery = this.getNearAIDiscovery();
+      if (!discovery) {
+        console.warn('Agent discovery is not enabled');
+        return { tasks: [], interactions: [], reputationScore: 0 };
+      }
+      
+      return await discovery.getAgentHistory(agentId);
+    },
+    
+    /**
+     * Record a task execution for tracking agent behavior
+     * @param {string} agentId - ID of the agent
+     * @param {Object} taskData - Task execution data
+     * @returns {Promise<boolean>} - Whether recording was successful
+     */
+    async recordAgentTask(agentId, taskData) {
+      const discovery = this.getNearAIDiscovery();
+      if (!discovery) {
+        console.warn('Agent discovery is not enabled, task not recorded');
+        return false;
+      }
+      
+      return await discovery.recordAgentTask(agentId, taskData);
+    },
+    
+    /**
+     * Verify an agent to establish credibility
+     * @param {string} agentId - ID of the agent
+     * @param {Object} verificationData - Verification data
+     * @returns {Promise<boolean>} - Whether verification was successful
+     */
+    async verifyAgent(agentId, verificationData = {}) {
+      const discovery = this.getNearAIDiscovery();
+      if (!discovery) {
+        console.warn('Agent discovery is not enabled, cannot verify agent');
+        return false;
+      }
+      
+      return await discovery.verifyAgent(agentId, verificationData);
+    },
+
+    /**
+     * Connect two agents for collaboration
+     * @param {string} agentId1 - ID of the first agent
+     * @param {string} agentId2 - ID of the second agent
+     * @param {Object} options - Connection options
+     * @returns {Promise<Object>} - Connection details
+     */
+    async connectAgents(agentId1, agentId2, options = {}) {
+      const discovery = this.getNearAIDiscovery();
+      if (!discovery) {
+        console.warn('Agent discovery is not enabled, cannot connect agents');
+        throw new Error('Agent discovery is not enabled');
+      }
+      
+      return await discovery.connectAgents(agentId1, agentId2, options);
+    },
+
+    /**
+     * Get the NEAR AI Integration instance
+     * @returns {Object} - NEAR AI Integration instance
+     */
+    getNearAIIntegration() {
+      return this.integrations.get('nearai') || null;
+    },
+
+    /**
+     * Get the NEAR AI Discovery instance
+     * @returns {Object} - NEAR AI Discovery instance
+     */
+    getNearAIDiscovery() {
+      return this.discovery?.nearAI || null;
+    },
+
+    /**
+     * Get the agent registry
+     * @returns {Object} - Agent registry
+     */
+    getAgentRegistry() {
+      return this.agents;
+    },
+
+    /**
+     * Get the communication adapter
+     * @returns {Object} - Communication adapter
+     */
+    getCommunicationAdapter() {
+      return this.communicationAdapter;
+    },
   };
   
   return framework;
@@ -289,6 +602,7 @@ module.exports = {
   NearAIIntegration,
   AITPIntegration,
   CrewAIIntegration,
+  ActivatorsManagementIntegration,
   reputationAnalytics,
   
   // Interfaces

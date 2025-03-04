@@ -22,10 +22,19 @@ const framework = intellex.init({
 |--------|------|---------|-------------|
 | `nearNetwork` | string | `'testnet'` | NEAR network to connect to ('mainnet', 'testnet') |
 | `enableReputation` | boolean | `true` | Whether to enable the reputation system |
+| `enableAgentDiscovery` | boolean | `false` | Whether to enable agent discovery capabilities |
+| `enableNearAI` | boolean | `false` | Whether to enable NEAR AI integration |
+| `enableCrewAI` | boolean | `false` | Whether to enable CrewAI integration |
+| `enableActivators` | boolean | `false` | Whether to enable Activators Management integration |
 | `crossChainSupport` | Array<string> | `['ethereum']` | List of blockchains to support for cross-chain operations |
 | `intentProcessing` | boolean | `true` | Whether to enable intent processing |
 | `verificationThreshold` | number | `0.7` | Default threshold for reputation verification |
 | `confidenceThreshold` | number | `0.7` | Default threshold for intent confidence |
+| `nearAIApiKey` | string | `null` | API key for NEAR AI services |
+| `nearAIDiscoveryApiKey` | string | `null` | API key for NEAR AI Discovery network |
+| `activatorsApiKey` | string | `null` | API key for Activators Management Platform |
+| `activatorsPlatformUrl` | string | `'https://api.activators.near.org'` | URL of the Activators Management Platform |
+| `autoInitialize` | boolean | `false` | Whether to automatically initialize integrations on startup |
 
 ## Agent Management
 
@@ -144,6 +153,201 @@ Submit reputation data to the blockchain for verification.
 
 ```javascript
 const blockchainResult = await reputationSystem.submitToBlockchain(agentId);
+```
+
+## Agent Discovery
+
+### Accessing the Agent Discovery
+
+```javascript
+const agentDiscovery = framework.getNearAIDiscovery();
+```
+
+### Agent Discovery Methods
+
+#### Discover Agents
+
+Discover agents based on capabilities, reputation, and other criteria.
+
+```javascript
+const agents = await framework.discoverAgents({
+  capabilities: ['data_analysis', 'market_research'],
+  minReputationScore: 0.75,
+  limit: 5
+});
+```
+
+#### Get Agent Capabilities
+
+Get detailed capabilities for a specific agent.
+
+```javascript
+const capabilities = await framework.getAgentCapabilities(agentId);
+```
+
+#### Get Agent History
+
+Retrieve the task execution history for an agent.
+
+```javascript
+const history = await framework.getAgentHistory(agentId);
+```
+
+#### Register Agent Capabilities
+
+Register or update an agent's capabilities.
+
+```javascript
+await framework.registerAgentCapabilities(agentId, 
+  ['data_analysis', 'visualization', 'prediction'],
+  { specialization: 'financial_data', experience_level: 'expert' }
+);
+```
+
+#### Record Agent Task
+
+Record a completed task for an agent's history and reputation.
+
+```javascript
+await framework.recordAgentTask(agentId, {
+  taskId: 'task-123',
+  description: 'Market analysis for product launch',
+  success: true,
+  performanceMetrics: {
+    accuracy: 0.92,
+    timeliness: 0.85
+  },
+  evidence: {
+    outputUrl: 'https://example.com/results/task-123'
+  }
+});
+```
+
+#### Verify Agent
+
+Verify an agent's identity, capabilities, and reputation.
+
+```javascript
+const verificationResult = await framework.verifyAgent(agentId, {
+  verificationLevel: 'high',
+  requiredCapabilities: ['data_analysis'],
+  minReputationScore: 0.8
+});
+```
+
+## Activators Management
+
+### Accessing the Activators Management
+
+```javascript
+const activatorsManagement = framework.getActivatorsManagement();
+```
+
+### Activators Methods
+
+#### Create Activator
+
+Create a new activator based on a base agent.
+
+```javascript
+const activator = await activatorsManagement.createActivator({
+  name: 'Marketing Campaign Manager',
+  baseAgentId: 'base-agent-123',
+  description: 'Manages marketing campaign activations',
+  capabilities: [
+    'activation_management',
+    'task_coordination',
+    'quality_assurance'
+  ],
+  configuration: {
+    taskValidation: true,
+    autoPayment: true
+  }
+}, {
+  deploymentRegion: 'us-west',
+  highAvailability: true
+});
+```
+
+#### List Activators
+
+List available activators with optional filtering.
+
+```javascript
+const activators = await activatorsManagement.listActivators({
+  capabilities: ['activation_management'],
+  status: 'active'
+});
+```
+
+#### Assign Task to Activator
+
+Assign a task to an activator.
+
+```javascript
+const taskAssignment = await activatorsManagement.assignTask(activatorId, {
+  id: 'task-001',
+  name: 'Market Research',
+  description: 'Conduct market research for new product',
+  deliverables: ['Market research report', 'Competitor analysis'],
+  compensation: 1000, // in NEAR tokens
+  deadline: new Date('2023-12-31'),
+  validationCriteria: {
+    comprehensiveness: 0.8,
+    accuracy: 0.85
+  },
+  assignedAgentIds: ['agent-1', 'agent-2']
+});
+```
+
+#### Connect Activator to Agent
+
+Connect an activator with a specialized agent.
+
+```javascript
+const connection = await activatorsManagement.connectActivatorToAgent(
+  activatorId,
+  agentId,
+  {
+    role: 'specialist',
+    permissions: ['task_execution', 'communication'],
+    compensationModel: {
+      type: 'task-based',
+      currency: 'NEAR'
+    }
+  }
+);
+```
+
+#### Get Activator Details
+
+Get detailed information about an activator.
+
+```javascript
+const activatorDetails = await activatorsManagement.getActivatorDetails(activatorId);
+```
+
+#### Get Activator Metrics
+
+Get performance metrics for an activator.
+
+```javascript
+const metrics = await activatorsManagement.getActivatorMetrics(activatorId);
+```
+
+#### Stake on Activator
+
+Stake tokens on an activator for governance or incentive alignment.
+
+```javascript
+const stakingResult = await activatorsManagement.stakeOnActivator(
+  activatorId,
+  {
+    amount: '100', // NEAR tokens
+    duration: 30, // days
+    purpose: 'performance_incentive'
+  }
+);
 ```
 
 ## Intent Processing

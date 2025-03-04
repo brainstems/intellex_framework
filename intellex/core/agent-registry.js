@@ -17,6 +17,7 @@ class AgentRegistry {
    * Create a new Agent Registry instance
    * @param {Object} config - Configuration options
    * @param {Object} config.reputationSystem - Reputation system instance
+   * @param {Object} config.nearAIDiscovery - NEAR AI Discovery integration instance
    */
   constructor(config = {}) {
     this.config = {
@@ -24,9 +25,12 @@ class AgentRegistry {
     };
     
     this.reputationSystem = config.reputationSystem;
+    this.nearAIDiscovery = config.nearAIDiscovery;
     this.adapters = new Map(); // Maps platform types to adapters
     this.agents = new Map(); // Maps agent IDs to agent metadata
     this.connections = new Map(); // Maps connection IDs to connection metadata
+    this.agentCapabilities = new Map(); // Maps agent IDs to their capabilities
+    this.agentHistory = new Map(); // Maps agent IDs to historical task performance
     this.initialized = false;
   }
   
@@ -377,6 +381,196 @@ class AgentRegistry {
     const updatedReputation = await this.reputationSystem.updateAgentReputation(agentId, update);
     
     return updatedReputation;
+  }
+  
+  /**
+   * Discover agents based on capability requirements
+   * @param {Object} query - Agent discovery query
+   * @param {Array} query.capabilities - Required capabilities
+   * @param {Object} query.filters - Additional filters
+   * @param {number} query.minReputationScore - Minimum reputation score required
+   * @param {number} query.limit - Maximum number of agents to return
+   * @returns {Promise<Array>} - List of matching agents
+   */
+  async discoverAgents(query = {}) {
+    if (!this.initialized) {
+      throw new Error('Agent registry not initialized');
+    }
+    
+    const {
+      capabilities = [],
+      filters = {},
+      minReputationScore = 0.5,
+      limit = 10
+    } = query;
+    
+    let discoveredAgents = [];
+    
+    // First, check local registry
+    const localAgents = this._discoverLocalAgents(query);
+    discoveredAgents = discoveredAgents.concat(localAgents);
+    
+    // Then, if NEAR AI Discovery is available, query the global network
+    if (this.nearAIDiscovery && this.nearAIDiscovery.initialized) {
+      const networkAgents = await this.nearAIDiscovery.discoverAgents(query);
+      
+      // Add discovered agents to local registry if they're not already present
+      for (const agent of networkAgents) {
+        if (!this.agents.has(agent.id)) {
+          this.agents.set(agent.id, agent);
+          this.agentCapabilities.set(agent.id, agent.capabilities || []);
+        }
+      }
+      
+      discoveredAgents = discoveredAgents.concat(networkAgents);
+    }
+    
+    // Filter by reputation score
+    if (this.reputationSystem) {
+      discoveredAgents = discoveredAgents.filter(agent => {
+        const score = this.reputationSystem.getReputationScore(agent.id) || 0;
+        return score >= minReputationScore;
+      });
+    }
+    
+    // Apply limit
+    if (limit && limit > 0) {
+      discoveredAgents = discoveredAgents.slice(0, limit);
+    }
+    
+    return discoveredAgents;
+  }
+  
+  /**
+   * Discover agents from local registry
+   * @param {Object} query - Agent discovery query
+   * @returns {Array} - List of matching local agents
+   * @private
+   */
+  _discoverLocalAgents(query = {}) {
+    const {
+      capabilities = [],
+      filters = {},
+      minReputationScore = 0.5
+    } = query;
+    
+    // Filter agents by capabilities and other filters
+    return Array.from(this.agents.values()).filter(agent => {
+      // Check if agent has all required capabilities
+      if (capabilities.length > 0) {
+        const agentCapabilities = this.agentCapabilities.get(agent.id) || [];
+        const hasAllCapabilities = capabilities.every(
+          cap => agentCapabilities.includes(cap)
+        );
+        if (!hasAllCapabilities) {
+          return false;
+        }
+      }
+      
+      // Apply additional filters
+      for (const [key, value] of Object.entries(filters)) {
+        if (agent[key] !== value) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }
+  
+  /**
+   * Get agent capabilities
+   * @param {string} agentId - Agent ID
+   * @returns {Promise<Array>} - List of agent capabilities
+   */
+  async getAgentCapabilities(agentId) {
+    if (!this.initialized) {
+      throw new Error('Agent registry not initialized');
+    }
+    
+    if (!this.agents.has(agentId)) {
+      throw new Error(`Agent not found: ${agentId}`);
+    }
+    
+    return this.agentCapabilities.get(agentId) || [];
+  }
+  
+  /**
+   * Register agent capabilities
+   * @param {string} agentId - Agent ID
+   * @param {Array} capabilities - Agent capabilities
+   * @returns {Promise<boolean>} - Whether registration was successful
+   */
+  async registerAgentCapabilities(agentId, capabilities) {
+    if (!this.initialized) {
+      throw new Error('Agent registry not initialized');
+    }
+    
+    if (!this.agents.has(agentId)) {
+      throw new Error(`Agent not found: ${agentId}`);
+    }
+    
+    this.agentCapabilities.set(agentId, capabilities);
+    
+    // If NEAR AI Discovery is available, publish capabilities to the network
+    if (this.nearAIDiscovery && this.nearAIDiscovery.initialized) {
+      await this.nearAIDiscovery.publishAgentCapabilities(agentId, capabilities);
+    }
+    
+    return true;
+  }
+  
+  /**
+   * Get agent historical behavior
+   * @param {string} agentId - Agent ID
+   * @returns {Promise<Array>} - List of historical tasks and outcomes
+   */
+  async getAgentHistory(agentId) {
+    if (!this.initialized) {
+      throw new Error('Agent registry not initialized');
+    }
+    
+    if (!this.agents.has(agentId)) {
+      throw new Error(`Agent not found: ${agentId}`);
+    }
+    
+    return this.agentHistory.get(agentId) || [];
+  }
+  
+  /**
+   * Record agent task execution
+   * @param {string} agentId - Agent ID
+   * @param {Object} taskData - Task data and outcome
+   * @returns {Promise<boolean>} - Whether recording was successful
+   */
+  async recordAgentTask(agentId, taskData) {
+    if (!this.initialized) {
+      throw new Error('Agent registry not initialized');
+    }
+    
+    if (!this.agents.has(agentId)) {
+      throw new Error(`Agent not found: ${agentId}`);
+    }
+    
+    const history = this.agentHistory.get(agentId) || [];
+    history.push({
+      ...taskData,
+      timestamp: new Date().toISOString()
+    });
+    this.agentHistory.set(agentId, history);
+    
+    // Update agent's reputation based on task outcome
+    if (this.reputationSystem && taskData.success !== undefined) {
+      const rating = taskData.success ? 1.0 : 0.0;
+      this.reputationSystem.submitRating(
+        agentId,
+        rating,
+        taskData.requesterId,
+        { taskId: taskData.taskId, evidence: taskData.evidence }
+      );
+    }
+    
+    return true;
   }
 }
 
